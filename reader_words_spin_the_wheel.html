@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reader Words - Spin the Wheel</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fff;text-align:center;color:#222}
+.game{max-width:760px;margin:20px auto;padding:10px}
+h1{font-size:28px;margin:8px 0 14px;color:#333}
+.wheel-wrap{position:relative;width:min(92vw,680px);margin:auto}
+canvas{width:100%;height:auto;display:block}
+.pointer{position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:25px solid transparent;border-right:25px solid transparent;border-top:58px solid #ed2024;filter:drop-shadow(0 3px 2px #888)}
+button{margin:10px 0;padding:15px 52px;border:4px solid #fff;border-radius:40px;background:#1769e0;color:#fff;font-size:25px;font-weight:800;box-shadow:0 4px 10px #aaa;cursor:pointer}
+button:disabled{opacity:.6;cursor:not-allowed}
+#status{font-size:17px;color:#666;min-height:25px}
+#result{font-size:32px;font-weight:800;min-height:45px;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="game">
+<h1>🎡 Spin & Read!</h1>
+<div class="wheel-wrap">
+<canvas id="wheel" aria-label="Spin the wheel reading game"></canvas>
+<div class="pointer"></div>
+</div>
+<button id="spin">SPIN</button>
+<div id="status">Click SPIN to choose a word!</div>
+<div id="result"></div>
+</div>
+<script>
+const words=["Apatosaurus","Dinosaurs","Hope","Photograph","Room","Some","Called","Elephants","Lady","Pictures","School","Zoo","Crocodiles","Home","Museum","Rain","Shoes"];
+const colors=["#7b21b5","#1769e0","#079db0","#2cab28","#f4bd16","#ff8300","#ed2024","#e72b8d","#5036c7","#08a49e","#5baa27","#e3b500","#f27c00","#dc2433","#8042c8","#1889d5","#dc2b82"];
+const canvas=document.getElementById("wheel"),ctx=canvas.getContext("2d"),btn=document.getElementById("spin"),status=document.getElementById("status"),result=document.getElementById("result");
+let rotation=0,spinning=false;
+function resize(){
+ const s=Math.min(window.innerWidth*.92,680),d=window.devicePixelRatio||1;
+ canvas.width=s*d;canvas.height=s*d;canvas.style.width=s+"px";canvas.style.height=s+"px";
+ ctx.setTransform(d,0,0,d,0,0);draw();
+}
+function draw(){
+ const s=canvas.clientWidth,cx=s/2,cy=s/2,r=s*.445,step=Math.PI*2/words.length;
+ ctx.clearRect(0,0,s,s);
+ ctx.beginPath();ctx.arc(cx,cy,r+9,0,Math.PI*2);ctx.fillStyle="#151515";ctx.fill();
+ ctx.save();ctx.translate(cx,cy);ctx.rotate(rotation);
+ for(let i=0;i<words.length;i++){
+   let a=-Math.PI/2+i*step,b=a+step,m=a+step/2;
+   ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,r,a,b);ctx.closePath();
+   ctx.fillStyle=colors[i];ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2.5;ctx.stroke();
+   ctx.save();ctx.rotate(m);ctx.translate(r*.68,0);
+   let fs=s*.034;if(words[i].length>=11)fs=s*.021;if(words[i].length>=10)fs=s*.023;else if(words[i].length>=9)fs=s*.025;else if(words[i].length>=8)fs=s*.028;
+   let flip=(m>Math.PI/2&&m<3*Math.PI/2);if(flip)ctx.rotate(Math.PI);
+   ctx.font=`800 ${fs}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";
+   ctx.lineWidth=Math.max(2,fs*.1);ctx.strokeStyle="rgba(0,0,0,.25)";ctx.strokeText(words[i],0,0);
+   ctx.fillStyle="#fff";ctx.fillText(words[i],0,0);ctx.restore();
+ }
+ ctx.restore();
+ ctx.beginPath();ctx.arc(cx,cy,r*.145,0,Math.PI*2);ctx.fillStyle="#171717";ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=6;ctx.stroke();
+ ctx.beginPath();ctx.arc(cx,cy,r*.075,0,Math.PI*2);ctx.fillStyle="#555";ctx.fill();
+ for(let i=0;i<36;i++){let a=i*Math.PI*2/36,x=cx+Math.cos(a)*(r+9),y=cy+Math.sin(a)*(r+9);ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();}
+}
+function spin(){
+ if(spinning)return;spinning=true;btn.disabled=true;result.textContent="";status.textContent="🎡 Spinning...";
+ const winner=Math.floor(Math.random()*words.length),step=Math.PI*2/words.length;
+ const target=-(winner*step+step/2),cur=rotation%(Math.PI*2);let delta=target-cur;while(delta>0)delta-=Math.PI*2;
+ const start=rotation,finish=rotation+Math.PI*2*7+delta,dur=4700,t0=performance.now();
+ function anim(t){let p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);rotation=start+(finish-start)*e;draw();if(p<1)requestAnimationFrame(anim);else{rotation=finish;draw();status.textContent="⭐ Read the word!";result.textContent=words[winner];spinning=false;btn.disabled=false}}
+ requestAnimationFrame(anim);
+}
+btn.addEventListener("click",spin);window.addEventListener("resize",resize);resize();
+</script>
+</body>
+</html>
